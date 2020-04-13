@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1210,4 +1211,15 @@ func MustResultString(t *testing.T, input models.RunResult) string {
 	result := input.Data.Get("result")
 	require.Equal(t, gjson.String, result.Type, fmt.Sprintf("result type %s is not string", result.Type))
 	return result.String()
+}
+
+type EthereumLog interface{ Next() bool }
+
+func GetLogs(logs EthereumLog) []interface{} {
+	var rv []interface{}
+	for logs.Next() {
+		log := reflect.Indirect(reflect.ValueOf(logs)).FieldByName("Event").Interface()
+		rv = append(rv, log)
+	}
+	return rv
 }
