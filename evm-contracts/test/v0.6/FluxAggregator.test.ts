@@ -86,7 +86,6 @@ describe('FluxAggregator', () => {
     matchers.publicAbi(fluxAggregatorFactory, [
       'acceptAdmin',
       'addOracle',
-      'addOracles',
       'allocatedFunds',
       'availableFunds',
       'decimals',
