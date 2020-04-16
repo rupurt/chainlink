@@ -328,16 +328,12 @@ func TestLogBroadcaster_ReceivesAllLogsWhenResubscribing(t *testing.T) {
 	ethClient := new(mocks.Client)
 	sub := new(mocks.Subscription)
 
-	chBlock := make(chan struct{})
 	chchRawLogs := make(chan chan<- eth.Log, 1)
-	var unblock struct{}
 
 	ethClient.On("SubscribeToLogs", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			chRawLogs := args.Get(1).(chan<- eth.Log)
 			chchRawLogs <- chRawLogs
-			<-chBlock
-			return
 		}).
 		Return(sub, nil).
 		Twice()
@@ -359,20 +355,13 @@ func TestLogBroadcaster_ReceivesAllLogsWhenResubscribing(t *testing.T) {
 
 	lb.Register(common.Address{}, &logListener)
 	chRawLogs1 := <-chchRawLogs
-	chBlock <- unblock
-	go func() {
-		chRawLogs1 <- eth.Log{BlockNumber: 1, Index: 0}
-		chRawLogs1 <- eth.Log{BlockNumber: 1, Index: 1}
-	}()
+	chRawLogs1 <- eth.Log{BlockNumber: 0, Index: 0}
+	chRawLogs1 <- eth.Log{BlockNumber: 1, Index: 0}
 
 	lb.Register(common.Address{1}, &logListener2) // trigger resubscription
 	chRawLogs2 := <-chchRawLogs
-	go func() {
-		chRawLogs2 <- eth.Log{BlockNumber: 1, Index: 1} // send overlapping logs
-		chRawLogs2 <- eth.Log{BlockNumber: 1, Index: 2}
-	}()
-
-	chBlock <- unblock
+	chRawLogs2 <- eth.Log{BlockNumber: 1, Index: 0} // send overlapping logs
+	chRawLogs2 <- eth.Log{BlockNumber: 2, Index: 0}
 
 	require.Eventually(t, func() bool { return logCount == 3 }, 5*time.Second, 10*time.Millisecond)
 }
