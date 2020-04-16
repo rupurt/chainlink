@@ -17,6 +17,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run() 
+	shutdown()
+	os.Exit(code)
+}
+
 func TestStore_Start(t *testing.T) {
 	t.Parallel()
 
