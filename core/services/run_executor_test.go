@@ -115,6 +115,7 @@ func TestRunExecutor_Execute_CancelActivelyRunningTask(t *testing.T) {
 
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
+	// It will never be triggered - sleep forever
 	clock := cltest.NewTriggerClock(t)
 	store.Clock = clock
 
@@ -145,12 +146,15 @@ func TestRunExecutor_Execute_CancelActivelyRunningTask(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	runQueue := new(mocks.RunQueue)
-	runManager := services.NewRunManager(runQueue, store.Config, store.ORM, pusher, store.TxManager, clock)
-	runManager.Cancel(run.ID)
+	runManager := services.NewRunManager(runQueue, store.Config, store.ORM, pusher, store.TxManager, store.Clock)
+	crun, err := runManager.Cancel(run.ID)
+	fmt.Println("run from Cancel", crun)
+	require.NoError(t, err)
 
-	clock.Trigger()
+	frun, err := store.FindJobRun(run.ID)
+	fmt.Println("frun", frun)
 
-	run, err := store.FindJobRun(run.ID)
+	run, err = store.FindJobRun(run.ID)
 	require.NoError(t, err)
 	assert.Equal(t, models.RunStatusCancelled, run.GetStatus())
 
