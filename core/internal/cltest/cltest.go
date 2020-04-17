@@ -81,6 +81,15 @@ func init() {
 	logger.SetLogger(CreateTestLogger(lvl))
 }
 
+func SetUpDBAndRunTests(m *testing.M) {
+	err := GlobalPrepareTestDB()
+	if err != nil {
+		panic(err)
+	}
+	code := m.Run()
+	os.Exit(code)
+}
+
 func logLevelFromEnv() zapcore.Level {
 	lvl := zapcore.ErrorLevel
 	if env := os.Getenv("LOG_LEVEL"); env != "" {
@@ -228,8 +237,6 @@ func NewApplicationWithConfigAndKey(t testing.TB, tc *TestConfig, flags ...strin
 func NewApplicationWithConfig(t testing.TB, tc *TestConfig, flags ...string) (*TestApplication, func()) {
 	t.Helper()
 
-	cleanupDB := PrepareTestDB(tc)
-
 	ta := &TestApplication{t: t, connectedChannel: make(chan struct{}, 1)}
 	app := chainlink.NewApplication(tc.Config, func(app chainlink.Application) {
 		ta.connectedChannel <- struct{}{}
@@ -246,7 +253,6 @@ func NewApplicationWithConfig(t testing.TB, tc *TestConfig, flags ...string) (*T
 	ta.wsServer = tc.wsServer
 	return ta, func() {
 		require.NoError(t, ta.Stop())
-		cleanupDB()
 		require.True(t, ta.EthMock.AllCalled(), ta.EthMock.Remaining())
 	}
 }

@@ -12,25 +12,10 @@ import (
 	"github.com/smartcontractkit/chainlink/core/store/orm"
 )
 
-// PrepareTestDB destroys, creates and migrates the test database.
-func PrepareTestDB(tc *TestConfig) func() {
-	panic("PrepareTestDB")
-	t := tc.t
-	t.Helper()
-
-	// parsed, err := url.Parse(tc.DatabaseURL())
-	// if err != nil {
-	//     t.Fatalf("unable to extract database from %v: %v", tc.DatabaseURL(), err)
-	// }
-
-	// dropAndCreateTestDB(t, parsed)
-	// migrateTestDB(tc)
-
-	// return nil
-	return func() {}
-}
-
-func GlobalPrepareTestDB(config *orm.Config) error {
+// GlobalPrepareTestDB destroys, creates and migrates the test database.
+// TODO: Rename
+func GlobalPrepareTestDB() error {
+	config := orm.NewConfig()
 	parsed, err := url.Parse(config.DatabaseURL())
 	if err != nil {
 		return err
@@ -48,6 +33,7 @@ func GlobalPrepareTestDB(config *orm.Config) error {
 	// Register txdb as dialect wrapping postgres
 	// See: DialectTransactionWrappedPostgres
 	txdb.Register("cloudsqlpostgres", "postgres", config.DatabaseURL())
+	return nil
 }
 
 func dropAndCreateTestDB(parsed *url.URL) error {

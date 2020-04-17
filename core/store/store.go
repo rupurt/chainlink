@@ -132,14 +132,14 @@ func (ed *EthDialer) Dial(urlString string) (eth.CallerSubscriber, error) {
 }
 
 // NewStore will create a new store using the Eth dialer
-func NewStore(config *orm.Config, shutdownSignal gracefulpanic.Signal) *Store {
-	return NewStoreWithDialer(config, NewEthDialer(config.MaxRPCCallsPerSecond()), shutdownSignal)
+func NewStore(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
+	return NewStoreWithDialer(config, NewEthDialer(config.MaxRPCCallsPerSecond()), shutdownSignal, options...)
 }
 
 // NewStoreWithDialer creates a new store with the given config and dialer
-func NewStoreWithDialer(config *orm.Config, dialer Dialer, shutdownSignal gracefulpanic.Signal) *Store {
+func NewStoreWithDialer(config *orm.Config, dialer Dialer, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
 	keyStore := func() *KeyStore { return NewKeyStore(config.KeysDir()) }
-	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal)
+	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal, options...)
 }
 
 // NewInsecureStore creates a new store with the given config and

@@ -27,12 +27,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := cltest.GlobalPrepareTestDB(orm.NewConfig())
-	if err != nil {
-		panic(err)
-	}
-	code := m.Run()
-	os.Exit(code)
+	cltest.SetUpDBAndRunTests(m)
 }
 
 func TestORM_WhereNotFound(t *testing.T) {

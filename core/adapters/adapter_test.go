@@ -12,6 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	cltest.SetUpDBAndRunTests(m)
+}
+
 func TestCreatingAdapterWithConfig(t *testing.T) {
 	t.Parallel()
 	store, cleanup := cltest.NewStore(t)
