@@ -47,7 +47,7 @@ const (
 	// When the connection is opened, it starts a transaction and all
 	// operations performed on this sql.DB will be within that transaction.
 	//
-	// NOTE: This must be called cloudsqlpostgres because of an absolutely
+	// HACK: This must be called cloudsqlpostgres because of an absolutely
 	// horrible design in gorm. We need gorm to enable postgres-specific
 	// features for the txdb driver, but it can only do that if the dialect is
 	// called "postgres" or "cloudsqlpostgres".

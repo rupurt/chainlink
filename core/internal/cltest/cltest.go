@@ -405,19 +405,30 @@ func (ta *TestApplication) MustCreateJobRun(txHashBytes []byte, blockHashBytes [
 }
 
 // NewStoreWithConfig creates a new store with given config
-func NewStoreWithConfig(config *TestConfig) (*strpkg.Store, func()) {
-	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal(), orm.DialectTransactionWrappedPostgres)
+func NewStoreWithConfig(config *TestConfig, options ...interface{}) (*strpkg.Store, func()) {
+	addDefault = true
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case orm.Dialect:
+			addDefault = false
+		}
+	}
+	if addDefault {
+		// Run tests wrapped in transaction by default
+		options = append(options, orm.DialectTransactionWrappedPostgres)
+	}
+	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal(), dialect)
 	return s, func() {
 		cleanUpStore(config.t, s)
 	}
 }
 
 // NewStore creates a new store
-func NewStore(t testing.TB) (*strpkg.Store, func()) {
+func NewStore(t testing.TB, options ...interface{}) (*strpkg.Store, func()) {
 	t.Helper()
 
 	c, cleanup := NewConfig(t)
-	store, storeCleanup := NewStoreWithConfig(c)
+	store, storeCleanup := NewStoreWithConfig(c, options...)
 	return store, func() {
 		storeCleanup()
 		cleanup()
