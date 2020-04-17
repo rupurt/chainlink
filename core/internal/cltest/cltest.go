@@ -63,6 +63,9 @@ const (
 	APISessionID = "session"
 	// SessionSecret is the hardcoded secret solely used for test
 	SessionSecret = "clsession_test_secret"
+	// RawPostgresDriver is a flag that switches the DB to using the default 'postgres' driver that is not wrapped in a transaction
+	// Only use this if you know exactly why you need it or you will see concurrency issues in your tests.
+	RawPostgresDriver = "disable_transaction_wrapping"
 )
 
 var storeCounter uint64
@@ -406,16 +409,11 @@ func (ta *TestApplication) MustCreateJobRun(txHashBytes []byte, blockHashBytes [
 
 // NewStoreWithConfig creates a new store with given config
 func NewStoreWithConfig(config *TestConfig, options ...interface{}) (*strpkg.Store, func()) {
-	addDefault = true
+	dialect := orm.DialectTransactionWrappedPostgres
 	for _, opt := range options {
-		switch v := opt.(type) {
-		case orm.Dialect:
-			addDefault = false
+		if opt == RawPostgresDriver {
+			dialect = orm.DialectPostgres
 		}
-	}
-	if addDefault {
-		// Run tests wrapped in transaction by default
-		options = append(options, orm.DialectTransactionWrappedPostgres)
 	}
 	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal(), dialect)
 	return s, func() {

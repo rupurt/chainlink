@@ -68,7 +68,7 @@ func TestPostgresLockingStrategy_Lock(t *testing.T) {
 }
 
 func TestPostgresLockingStrategy_WhenLostIsReacquired(t *testing.T) {
-	store, cleanup := cltest.NewStore(t)
+	store, cleanup := cltest.NewStore(t, cltest.RawPostgresDriver)
 	defer cleanup()
 
 	if store.Config.DatabaseURL() == "" {
@@ -94,7 +94,7 @@ func TestPostgresLockingStrategy_WhenLostIsReacquired(t *testing.T) {
 }
 
 func TestPostgresLockingStrategy_CanBeReacquiredByNewNodeAfterDisconnect(t *testing.T) {
-	store, cleanup := cltest.NewStore(t)
+	store, cleanup := cltest.NewStore(t, cltest.RawPostgresDriver)
 	defer cleanup()
 
 	if store.Config.DatabaseURL() == "" {
@@ -120,7 +120,7 @@ func TestPostgresLockingStrategy_CanBeReacquiredByNewNodeAfterDisconnect(t *test
 }
 
 func TestPostgresLockingStrategy_WhenReacquiredOriginalNodeErrors(t *testing.T) {
-	store, cleanup := cltest.NewStore(t)
+	store, cleanup := cltest.NewStore(t, cltest.RawPostgresDriver)
 	defer cleanup()
 
 	if store.Config.DatabaseURL() == "" {

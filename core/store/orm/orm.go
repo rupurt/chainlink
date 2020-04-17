@@ -85,9 +85,6 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 
 		}
 	}
-	fmt.Println("options balls", options)
-	fmt.Printf("options balls: %#v\n", options)
-	fmt.Println("balls", dialect)
 
 	lockingStrategy, err := NewLockingStrategy(dialect, uri)
 	if err != nil {
@@ -104,6 +101,7 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	}
 	orm.MustEnsureAdvisoryLock()
 
+	// TODO: Change URI to be unique if dialect is TransactionWrappedPostgres!
 	db, err := initializeDatabase(string(dialect), uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to init DB")
@@ -130,8 +128,6 @@ func displayTimeout(timeout time.Duration) string {
 }
 
 func initializeDatabase(dialect, path string) (*gorm.DB, error) {
-	fmt.Println("dialect", dialect)
-	fmt.Println("path", path)
 	db, err := gorm.Open(dialect, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to open %s for gorm DB", path)
