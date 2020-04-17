@@ -3,15 +3,18 @@ package cltest
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
+
+	"github.com/DATA-DOG/go-txdb"
 	"github.com/jinzhu/gorm"
 	"github.com/smartcontractkit/chainlink/core/gracefulpanic"
 	"github.com/smartcontractkit/chainlink/core/store/migrations"
 	"github.com/smartcontractkit/chainlink/core/store/orm"
-	"net/url"
 )
 
 // PrepareTestDB destroys, creates and migrates the test database.
 func PrepareTestDB(tc *TestConfig) func() {
+	panic("PrepareTestDB")
 	t := tc.t
 	t.Helper()
 
@@ -29,7 +32,6 @@ func PrepareTestDB(tc *TestConfig) func() {
 
 func GlobalPrepareTestDB(config *orm.Config) error {
 	parsed, err := url.Parse(config.DatabaseURL())
-	fmt.Println("balls", config.DatabaseURL())
 	if err != nil {
 		return err
 	}
@@ -38,12 +40,20 @@ func GlobalPrepareTestDB(config *orm.Config) error {
 	if err != nil {
 		return err
 	}
-	return migrateTestDB(config)
+	err = migrateTestDB(config)
+	if err != nil {
+		return err
+	}
+
+	// Register txdb as dialect wrapping postgres
+	// See: DialectTransactionWrappedPostgres
+	txdb.Register("cloudsqlpostgres", "postgres", config.DatabaseURL())
 }
 
 func dropAndCreateTestDB(parsed *url.URL) error {
 	dbname := parsed.Path[1:]
-	// Cannot drop database if we are connected to it
+	// Cannot drop test database if we are connected to it, so we must connect
+	// to a different one. template1 should be present on all postgres installations
 	parsed.Path = "/template1"
 	db, err := sql.Open(string(orm.DialectPostgres), parsed.String())
 	if err != nil {

@@ -12,17 +12,22 @@ import (
 	"github.com/smartcontractkit/chainlink/core/eth"
 	"github.com/smartcontractkit/chainlink/core/gracefulpanic"
 	"github.com/smartcontractkit/chainlink/core/logger"
-	// "github.com/smartcontractkit/chainlink/core/store/migrations"
+	"github.com/smartcontractkit/chainlink/core/store/migrations"
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/store/orm"
 	"github.com/smartcontractkit/chainlink/core/utils"
 
 	"github.com/ethereum/go-ethereum/rpc"
-	// "github.com/jinzhu/gorm"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/tevino/abool"
 	"go.uber.org/multierr"
 	"golang.org/x/time/rate"
+)
+
+const (
+	// AutoMigrate is a flag that automatically migrates the DB when passed to initializeORM
+	AutoMigrate = "auto_migrate"
 )
 
 // Store contains fields for the database, Config, KeyStore, and TxManager
@@ -243,13 +248,17 @@ func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal, opti
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#NewORM")
 	}
-	orm.SetLogging(config.LogSQLStatements() || config.LogSQLMigrations())
-	// FIXME: Temporarily disable for testing
-	// err = orm.RawDB(func(db *gorm.DB) error {
-	//     return migrations.Migrate(db)
-	// })
-	if err != nil {
-		return nil, errors.Wrap(err, "initializeORM#Migrate")
+	for _, opt := range options {
+		if opt == AutoMigrate {
+			orm.SetLogging(config.LogSQLStatements() || config.LogSQLMigrations())
+
+			err = orm.RawDB(func(db *gorm.DB) error {
+				return migrations.Migrate(db)
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "initializeORM#Migrate")
+			}
+		}
 	}
 	orm.SetLogging(config.LogSQLStatements())
 	return orm, nil

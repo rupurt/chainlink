@@ -45,9 +45,9 @@ const (
 	DialectPostgres DialectName = "postgres"
 	// DialectTransactionWrappedPostgres is useful for tests.
 	// When the connection is opened, it starts a transaction and all
-	// operations performed on this sql.DB will be within that transaction.
+	// operations performed on the DB will be within that transaction.
 	//
-	// HACK: This must be called cloudsqlpostgres because of an absolutely
+	// HACK: This must be the string 'cloudsqlpostgres' because of an absolutely
 	// horrible design in gorm. We need gorm to enable postgres-specific
 	// features for the txdb driver, but it can only do that if the dialect is
 	// called "postgres" or "cloudsqlpostgres".
@@ -80,9 +80,14 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case DialectName:
-			logger.Debugf("using dialect: %v", v)
+			if v == DialectTransactionWrappedPostgres {
+				// Dbtx uses the uri as a unique identifier for each
+				// transaction. Each ORM should be encapsulated in it's own
+				// transaction, and thus needs its own unique id.
+				uri = models.NewID().String()
+			}
 			dialect = v
-
+			logger.Debugf("using dialect: %v", v)
 		}
 	}
 
@@ -101,7 +106,6 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	}
 	orm.MustEnsureAdvisoryLock()
 
-	// TODO: Change URI to be unique if dialect is TransactionWrappedPostgres!
 	db, err := initializeDatabase(string(dialect), uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to init DB")
@@ -193,9 +197,10 @@ func (orm *ORM) Unscoped() *ORM {
 }
 
 // Where fetches multiple objects with "Find".
+// FIXME: Potential SQL injection vector here, remove if possible
 func (orm *ORM) Where(field string, value interface{}, instance interface{}) error {
 	orm.MustEnsureAdvisoryLock()
-	return orm.db.Debug().Where(fmt.Sprintf("%v = ?", field), value).Find(instance).Error
+	return orm.db.Where(fmt.Sprintf("%v = ?", field), value).Find(instance).Error
 }
 
 // FindBridge looks up a Bridge by its Name.
