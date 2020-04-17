@@ -26,6 +26,15 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+func TestMain(m *testing.M) {
+	// setup()
+	// TODO: Move PrepareTestDB call here
+	fmt.Println("TestMain: SETUP GOES HERE")
+	code := m.Run()
+	// shutdown()
+	os.Exit(code)
+}
+
 func TestORM_WhereNotFound(t *testing.T) {
 	t.Parallel()
 	store, cleanup := cltest.NewStore(t)
