@@ -31,7 +31,7 @@ func bootstrapORM(t *testing.T) (*orm.ORM, func()) {
 	config := tc.Config
 
 	require.NoError(t, os.MkdirAll(config.RootDir(), 0700))
-	cleanupDB := cltest.PrepareTestDB(tc)
+	require.NoError(t, cltest.GlobalPrepareTestDB(tc))
 	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), gracefulpanic.NewSignal())
 	require.NoError(t, err)
 	orm.SetLogging(true)
@@ -40,7 +40,6 @@ func bootstrapORM(t *testing.T) (*orm.ORM, func()) {
 		assert.NoError(t, orm.Close())
 		cleanup()
 		os.RemoveAll(config.RootDir())
-		cleanupDB()
 	}
 }
 

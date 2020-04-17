@@ -14,14 +14,19 @@ import (
 
 // GlobalPrepareTestDB destroys, creates and migrates the test database.
 // TODO: Rename
-func GlobalPrepareTestDB() error {
-	config := orm.NewConfig()
-	parsed, err := url.Parse(config.DatabaseURL())
-	if err != nil {
-		return err
+func GlobalPrepareTestDB(options ...interface{}) error {
+	var config *orm.Config
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case *orm.Config:
+			config = v
+		}
 	}
 
-	err = dropAndCreateTestDB(parsed)
+	if config == nil {
+		config = orm.NewConfig()
+	}
+	err := dropAndCreateTestDB(config)
 	if err != nil {
 		return err
 	}
@@ -36,7 +41,12 @@ func GlobalPrepareTestDB() error {
 	return nil
 }
 
-func dropAndCreateTestDB(parsed *url.URL) error {
+func dropAndCreateTestDB(config *orm.Config) error {
+	parsed, err := url.Parse(config.DatabaseURL())
+	if err != nil {
+		return err
+	}
+
 	dbname := parsed.Path[1:]
 	// Cannot drop test database if we are connected to it, so we must connect
 	// to a different one. template1 should be present on all postgres installations

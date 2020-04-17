@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"go.uber.org/multierr"
 )
 
@@ -126,10 +125,8 @@ func (s *PostgresLockingStrategy) Unlock(timeout time.Duration) error {
 type DummyLockingStrategy struct{}
 
 func (d *DummyLockingStrategy) Lock(timeout time.Duration) error {
-	logger.Debugf("DummyLockingStrategy simulating lock with timeout %v", timeout)
 	return nil
 }
 func (d *DummyLockingStrategy) Unlock(timeout time.Duration) error {
-	logger.Debugf("DummyLockingStrategy simulating unlock with timeout %v", timeout)
 	return nil
 }

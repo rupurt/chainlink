@@ -41,9 +41,6 @@ func TestPostgresLockingStrategy_Lock(t *testing.T) {
 	tc, cleanup := cltest.NewConfig(t)
 	defer cleanup()
 
-	cleanupDB := cltest.PrepareTestDB(tc)
-	defer cleanupDB()
-
 	c := tc.Config
 
 	if c.DatabaseURL() == "" {
