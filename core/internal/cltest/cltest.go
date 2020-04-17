@@ -406,11 +406,9 @@ func (ta *TestApplication) MustCreateJobRun(txHashBytes []byte, blockHashBytes [
 
 // NewStoreWithConfig creates a new store with given config
 func NewStoreWithConfig(config *TestConfig) (*strpkg.Store, func()) {
-	cleanupDB := PrepareTestDB(config)
-	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal())
+	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal(), orm.DialectTransactionWrappedPostgres)
 	return s, func() {
 		cleanUpStore(config.t, s)
-		cleanupDB()
 	}
 }
 

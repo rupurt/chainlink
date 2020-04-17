@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"go.uber.org/multierr"
 )
 
@@ -17,6 +18,10 @@ func NewLockingStrategy(dialect DialectName, dbpath string) (LockingStrategy, er
 	switch dialect {
 	case DialectPostgres:
 		return NewPostgresLockingStrategy(dbpath)
+	case DialectTransactionWrappedPostgres:
+		// This is used in test code. Since each db connection is isolated in
+		// it's own transaction, there is no need for any locking
+		return &DummyLockingStrategy{}, nil
 	}
 
 	return nil, fmt.Errorf("unable to create locking strategy for dialect %s and path %s", dialect, dbpath)
@@ -116,4 +121,15 @@ func (s *PostgresLockingStrategy) Unlock(timeout time.Duration) error {
 		connErr,
 		dbErr,
 	)
+}
+
+type DummyLockingStrategy struct{}
+
+func (d *DummyLockingStrategy) Lock(timeout time.Duration) error {
+	logger.Debugf("DummyLockingStrategy simulating lock with timeout %v", timeout)
+	return nil
+}
+func (d *DummyLockingStrategy) Unlock(timeout time.Duration) error {
+	logger.Debugf("DummyLockingStrategy simulating unlock with timeout %v", timeout)
+	return nil
 }

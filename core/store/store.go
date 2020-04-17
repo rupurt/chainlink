@@ -12,13 +12,13 @@ import (
 	"github.com/smartcontractkit/chainlink/core/eth"
 	"github.com/smartcontractkit/chainlink/core/gracefulpanic"
 	"github.com/smartcontractkit/chainlink/core/logger"
-	"github.com/smartcontractkit/chainlink/core/store/migrations"
+	// "github.com/smartcontractkit/chainlink/core/store/migrations"
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/store/orm"
 	"github.com/smartcontractkit/chainlink/core/utils"
 
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/jinzhu/gorm"
+	// "github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/tevino/abool"
 	"go.uber.org/multierr"
@@ -140,10 +140,10 @@ func NewStoreWithDialer(config *orm.Config, dialer Dialer, shutdownSignal gracef
 // NewInsecureStore creates a new store with the given config and
 // dialer, using an insecure keystore.
 // NOTE: Should only be used for testing!
-func NewInsecureStore(config *orm.Config, shutdownSignal gracefulpanic.Signal) *Store {
+func NewInsecureStore(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
 	dialer := NewEthDialer(config.MaxRPCCallsPerSecond())
 	keyStore := func() *KeyStore { return NewInsecureKeyStore(config.KeysDir()) }
-	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal)
+	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal, options...)
 }
 
 func newStoreWithDialerAndKeyStore(
@@ -151,13 +151,14 @@ func newStoreWithDialerAndKeyStore(
 	dialer Dialer,
 	keyStoreGenerator func() *KeyStore,
 	shutdownSignal gracefulpanic.Signal,
+	options ...interface{},
 ) *Store {
 
 	err := os.MkdirAll(config.RootDir(), os.FileMode(0700))
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create project root dir: %+v", err))
 	}
-	orm, err := initializeORM(config, shutdownSignal)
+	orm, err := initializeORM(config, shutdownSignal, options...)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to initialize ORM: %+v", err))
 	}
@@ -237,15 +238,16 @@ func (s *Store) SyncDiskKeyStoreToDB() error {
 	return merr
 }
 
-func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal) (*orm.ORM, error) {
-	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal)
+func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) (*orm.ORM, error) {
+	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#NewORM")
 	}
 	orm.SetLogging(config.LogSQLStatements() || config.LogSQLMigrations())
-	err = orm.RawDB(func(db *gorm.DB) error {
-		return migrations.Migrate(db)
-	})
+	// FIXME: Temporarily disable for testing
+	// err = orm.RawDB(func(db *gorm.DB) error {
+	//     return migrations.Migrate(db)
+	// })
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#Migrate")
 	}

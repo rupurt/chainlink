@@ -20,6 +20,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/store/orm"
 	"github.com/smartcontractkit/chainlink/core/utils"
 
+	"github.com/DATA-DOG/go-txdb"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,17 @@ func TestMain(m *testing.M) {
 	// setup()
 	// TODO: Move PrepareTestDB call here
 	fmt.Println("TestMain: SETUP GOES HERE")
+	err := cltest.GlobalPrepareTestDB(orm.NewConfig())
+	// HACK: This must be called cloudsqlpostgres because of an absolutely horrible design in gorm
+	// We need gorm to enable postgres-specific features for the txdb driver, but it can only do that if the dialect is called "postgres" or "cloudsqlpostgres"
+	// See: https://github.com/jinzhu/gorm/blob/master/dialect_postgres.go#L15
+	// Since "postgres" is already taken, "cloudsqlpostgres" is our only remaining option
+	txdb.Register("cloudsqlpostgres", "postgres", "postgresql://postgres@localhost:5432/chainlink_test?sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
 	code := m.Run()
+	// cleanupDB()
 	// shutdown()
 	os.Exit(code)
 }

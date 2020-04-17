@@ -43,6 +43,20 @@ type DialectName string
 const (
 	// DialectPostgres represents the postgres dialect.
 	DialectPostgres DialectName = "postgres"
+	// DialectTransactionWrappedPostgres is useful for tests.
+	// When the connection is opened, it starts a transaction and all
+	// operations performed on this sql.DB will be within that transaction.
+	//
+	// NOTE: This must be called cloudsqlpostgres because of an absolutely
+	// horrible design in gorm. We need gorm to enable postgres-specific
+	// features for the txdb driver, but it can only do that if the dialect is
+	// called "postgres" or "cloudsqlpostgres".
+	//
+	// See: https://github.com/jinzhu/gorm/blob/master/dialect_postgres.go#L15
+	//
+	// Since "postgres" is already taken, "cloudsqlpostgres" is our only
+	// remaining option
+	DialectTransactionWrappedPostgres DialectName = "cloudsqlpostgres"
 )
 
 // ORM contains the database object used by Chainlink.
@@ -61,11 +75,19 @@ var (
 )
 
 // NewORM initializes a new database file at the configured uri.
-func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal) (*ORM, error) {
-	dialect, err := DeduceDialect(uri)
-	if err != nil {
-		return nil, err
+func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal, options ...interface{}) (*ORM, error) {
+	dialect := DialectPostgres
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case DialectName:
+			logger.Debugf("using dialect: %v", v)
+			dialect = v
+
+		}
 	}
+	fmt.Println("options balls", options)
+	fmt.Printf("options balls: %#v\n", options)
+	fmt.Println("balls", dialect)
 
 	lockingStrategy, err := NewLockingStrategy(dialect, uri)
 	if err != nil {
@@ -93,9 +115,6 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 }
 
 func (orm *ORM) MustEnsureAdvisoryLock() {
-	if orm.dialectName != DialectPostgres {
-		return
-	}
 	err := orm.lockingStrategy.Lock(orm.advisoryLockTimeout)
 	if err != nil {
 		logger.Errorf("unable to lock ORM: %v", err)
@@ -111,6 +130,8 @@ func displayTimeout(timeout time.Duration) string {
 }
 
 func initializeDatabase(dialect, path string) (*gorm.DB, error) {
+	fmt.Println("dialect", dialect)
+	fmt.Println("path", path)
 	db, err := gorm.Open(dialect, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to open %s for gorm DB", path)
@@ -178,7 +199,7 @@ func (orm *ORM) Unscoped() *ORM {
 // Where fetches multiple objects with "Find".
 func (orm *ORM) Where(field string, value interface{}, instance interface{}) error {
 	orm.MustEnsureAdvisoryLock()
-	return orm.db.Where(fmt.Sprintf("%v = ?", field), value).Find(instance).Error
+	return orm.db.Debug().Where(fmt.Sprintf("%v = ?", field), value).Find(instance).Error
 }
 
 // FindBridge looks up a Bridge by its Name.
