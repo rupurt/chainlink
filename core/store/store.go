@@ -163,7 +163,7 @@ func newStoreWithDialerAndKeyStore(
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create project root dir: %+v", err))
 	}
-	orm, err := initializeORM(config, shutdownSignal, options...)
+	orm, err := initializeORM(config, shutdownSignal)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to initialize ORM: %+v", err))
 	}
@@ -243,8 +243,8 @@ func (s *Store) SyncDiskKeyStoreToDB() error {
 	return merr
 }
 
-func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) (*orm.ORM, error) {
-	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal, options...)
+func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal) (*orm.ORM, error) {
+	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal, config.Dialect)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#NewORM")
 	}

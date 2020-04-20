@@ -40,6 +40,7 @@ const readWritePerms = os.FileMode(0600)
 type Config struct {
 	viper           *viper.Viper
 	SecretGenerator SecretGenerator
+	Dialect         DialectName
 	runtimeStore    *ORM
 }
 

@@ -105,20 +105,28 @@ type TestConfig struct {
 }
 
 // NewConfig returns a new TestConfig
-func NewConfig(t testing.TB) (*TestConfig, func()) {
+func NewConfig(t testing.TB, options ...interface{}) (*TestConfig, func()) {
 	t.Helper()
 
 	wsserver, cleanup := newWSServer()
-	return NewConfigWithWSServer(t, wsserver), cleanup
+	return NewConfigWithWSServer(t, wsserver, options...), cleanup
 }
 
 // NewTestConfig returns a test configuration
-func NewTestConfig(t testing.TB) *TestConfig {
+func NewTestConfig(t testing.TB, options ...interface{}) *TestConfig {
 	t.Helper()
 
 	count := atomic.AddUint64(&storeCounter, 1)
 	rootdir := filepath.Join(RootDir, fmt.Sprintf("%d-%d", time.Now().UnixNano(), count))
 	rawConfig := orm.NewConfig()
+
+	rawConfig.Dialect = orm.DialectTransactionWrappedPostgres
+	for _, opt := range options {
+		if opt == DisableTransactionWrapping {
+			rawConfig.Dialect = orm.DialectPostgres
+		}
+	}
+
 	rawConfig.Set("BRIDGE_RESPONSE_URL", "http://localhost:6688")
 	rawConfig.Set("ETH_CHAIN_ID", 3)
 	rawConfig.Set("CHAINLINK_DEV", true)
@@ -136,10 +144,10 @@ func NewTestConfig(t testing.TB) *TestConfig {
 }
 
 // NewConfigWithWSServer return new config with specified wsserver
-func NewConfigWithWSServer(t testing.TB, wsserver *httptest.Server) *TestConfig {
+func NewConfigWithWSServer(t testing.TB, wsserver *httptest.Server, options ...interface{}) *TestConfig {
 	t.Helper()
 
-	config := NewTestConfig(t)
+	config := NewTestConfig(t, options...)
 	config.SetEthereumServer(wsserver)
 	return config
 }
@@ -413,14 +421,8 @@ func (ta *TestApplication) MustCreateJobRun(txHashBytes []byte, blockHashBytes [
 }
 
 // NewStoreWithConfig creates a new store with given config
-func NewStoreWithConfig(config *TestConfig, options ...interface{}) (*strpkg.Store, func()) {
-	dialect := orm.DialectTransactionWrappedPostgres
-	for _, opt := range options {
-		if opt == DisableTransactionWrapping {
-			dialect = orm.DialectPostgres
-		}
-	}
-	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal(), dialect)
+func NewStoreWithConfig(config *TestConfig) (*strpkg.Store, func()) {
+	s := strpkg.NewInsecureStore(config.Config, gracefulpanic.NewSignal())
 	return s, func() {
 		cleanUpStore(config.t, s)
 	}
@@ -430,8 +432,8 @@ func NewStoreWithConfig(config *TestConfig, options ...interface{}) (*strpkg.Sto
 func NewStore(t testing.TB, options ...interface{}) (*strpkg.Store, func()) {
 	t.Helper()
 
-	c, cleanup := NewConfig(t)
-	store, storeCleanup := NewStoreWithConfig(c, options...)
+	c, cleanup := NewConfig(t, options...)
+	store, storeCleanup := NewStoreWithConfig(c)
 	return store, func() {
 		storeCleanup()
 		cleanup()

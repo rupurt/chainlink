@@ -73,6 +73,7 @@ type ChainlinkApplication struct {
 // present at the configured root directory (default: ~/.chainlink),
 // the logger at the same directory and returns the Application to
 // be used by the node.
+// TODO: Pass through transactional option here
 func NewApplication(config *orm.Config, onConnectCallbacks ...func(Application)) Application {
 	shutdownSignal := gracefulpanic.NewSignal()
 	store := store.NewStore(config, shutdownSignal)

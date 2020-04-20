@@ -299,7 +299,7 @@ func (cli *Client) RebroadcastTransactions(c *clipkg.Context) error {
 func (cli *Client) ResetDatabase(c *clipkg.Context) error {
 	config := orm.NewConfig()
 	if config.DatabaseURL() == "" {
-		return errors.New("You must set DATABASE_URL env variable. HINT: If you are running this to set up your local test database, try postgresql://postgres@localhost:5432/chainlink_test?sslmode=disable")
+		return errors.New("You must set DATABASE_URL env variable. HINT: If you are running this to set up your local test database, try DATABASE_URL=postgresql://postgres@localhost:5432/chainlink_test?sslmode=disable")
 	}
 	logger.Infof("Resetting database: %#v", config.DatabaseURL())
 	err := dropAndCreateTestDB(config)
@@ -343,7 +343,7 @@ func dropAndCreateTestDB(config *orm.Config) error {
 }
 
 func migrateTestDB(config *orm.Config) error {
-	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), gracefulpanic.NewSignal())
+	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), gracefulpanic.NewSignal(), config.Dialect)
 	if err != nil {
 		return fmt.Errorf("failed to initialize orm: %v", err)
 	}

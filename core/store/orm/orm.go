@@ -52,10 +52,10 @@ const (
 	// features for the txdb driver, but it can only do that if the dialect is
 	// called "postgres" or "cloudsqlpostgres".
 	//
-	// See: https://github.com/jinzhu/gorm/blob/master/dialect_postgres.go#L15
-	//
 	// Since "postgres" is already taken, "cloudsqlpostgres" is our only
 	// remaining option
+	//
+	// See: https://github.com/jinzhu/gorm/blob/master/dialect_postgres.go#L15
 	DialectTransactionWrappedPostgres DialectName = "cloudsqlpostgres"
 )
 
@@ -75,22 +75,22 @@ var (
 )
 
 // NewORM initializes a new database file at the configured uri.
-func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal, options ...interface{}) (*ORM, error) {
-	dialect := DialectPostgres
-	for _, opt := range options {
-		switch v := opt.(type) {
-		case DialectName:
-			if v == DialectTransactionWrappedPostgres {
-				// Dbtx uses the uri as a unique identifier for each
-				// transaction. Each ORM should be encapsulated in it's own
-				// transaction, and thus needs its own unique id.
-				uri = models.NewID().String()
-			}
-			dialect = v
-			logger.Debugf("using dialect: %v", v)
-		}
+func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal, dialect DialectName) (*ORM, error) {
+	if dialect == "" {
+		// Postgres is the default
+		dialect = DialectPostgres
+	} else if dialect == DialectTransactionWrappedPostgres {
+		// Dbtx uses the uri as a unique identifier for each transaction. Each ORM
+		// should be encapsulated in it's own transaction, and thus needs its own
+		// unique id.
+		//
+		// We can happily throw away the original uri here because if we are using
+		// txdb it should have already been set at the point where we called
+		// txdb.Register
+		uri = models.NewID().String()
 	}
 
+	fmt.Println("balls dialect", dialect)
 	lockingStrategy, err := NewLockingStrategy(dialect, uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create ORM lock")
@@ -116,11 +116,11 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	// TODO: It may be advisable to set this mode in production as well?
 	if dialect == DialectTransactionWrappedPostgres {
 		// Required to prevent phantom reads in overlapping tests
-		// err := db.Exec(`SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE`).Error
-		// if err != nil {
-		//   panic(err)
-		// }
-
+		fmt.Println("BALLS BALLS")
+		err := db.Exec(`SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE`).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	orm.db = db
@@ -773,6 +773,7 @@ func (orm *ORM) GetLastNonce(address common.Address) (uint64, error) {
 	orm.MustEnsureAdvisoryLock()
 	var transaction models.Tx
 	rval := orm.db.Order("nonce desc").Where(`"from" = ?`, address).First(&transaction)
+	fmt.Println("rval", rval)
 	return transaction.Nonce, ignoreRecordNotFound(rval)
 }
 
