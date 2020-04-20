@@ -42,31 +42,28 @@ func TestNewLockingStrategy(t *testing.T) {
 	}
 }
 
-func setupDB(t *testing.T) *cltest.TestConfig {
+func setupConfig(t *testing.T) *cltest.TestConfig {
 	tc := cltest.NewTestConfig(t, orm.DialectPostgres)
 	if tc.Config.DatabaseURL() == "" {
 		t.Skip("No postgres DatabaseURL set.")
 	}
-	migrationTestDBURL, err := cltest.DropAndCreateThrowawayTestDB(tc.DatabaseURL(), "locking")
-	require.NoError(t, err)
-	tc.Config.Set("DATABASE_URL", migrationTestDBURL)
-	tc.Config.Set("MIGRATE_DATABASE", true)
+	tc.Config.AdvisoryLockID = newAdvisoryLockID()
 	return tc
+
 }
 
 func TestPostgresLockingStrategy_Lock(t *testing.T) {
-	tc := setupDB(t)
+	tc := setupConfig(t)
 	c := tc.Config
-	advisoryLockID := newAdvisoryLockID()
 
 	delay := c.DatabaseTimeout()
 
-	ls, err := orm.NewPostgresLockingStrategy(c.DatabaseURL(), advisoryLockID)
+	ls, err := orm.NewPostgresLockingStrategy(c.DatabaseURL(), c.AdvisoryLockID)
 	require.NoError(t, err)
 	require.NoError(t, ls.Lock(delay), "should get exclusive lock")
 	require.NoError(t, ls.Lock(delay), "relocking on same instance is reentrant")
 
-	ls2, err := orm.NewPostgresLockingStrategy(c.DatabaseURL(), advisoryLockID)
+	ls2, err := orm.NewPostgresLockingStrategy(c.DatabaseURL(), c.AdvisoryLockID)
 	require.NoError(t, err)
 	require.Error(t, ls2.Lock(delay), "should not get 2nd exclusive lock")
 
@@ -77,15 +74,9 @@ func TestPostgresLockingStrategy_Lock(t *testing.T) {
 }
 
 func TestPostgresLockingStrategy_WhenLostIsReacquired(t *testing.T) {
-	tc := setupDB(t)
-	advisoryLockID := newAdvisoryLockID()
-	tc.Config.AdvisoryLockID = advisoryLockID
+	tc := setupConfig(t)
 	store, cleanup := cltest.NewStoreWithConfig(tc)
 	defer cleanup()
-
-	if store.Config.DatabaseURL() == "" {
-		t.Skip("No postgres DatabaseURL set.")
-	}
 
 	delay := store.Config.DatabaseTimeout()
 
@@ -98,7 +89,7 @@ func TestPostgresLockingStrategy_WhenLostIsReacquired(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	lock2, err := orm.NewLockingStrategy("postgres", store.Config.DatabaseURL(), advisoryLockID)
+	lock2, err := orm.NewLockingStrategy("postgres", store.Config.DatabaseURL(), tc.Config.AdvisoryLockID)
 	require.NoError(t, err)
 	err = lock2.Lock(delay)
 	require.Equal(t, errors.Cause(err), orm.ErrNoAdvisoryLock)
@@ -106,22 +97,16 @@ func TestPostgresLockingStrategy_WhenLostIsReacquired(t *testing.T) {
 }
 
 func TestPostgresLockingStrategy_CanBeReacquiredByNewNodeAfterDisconnect(t *testing.T) {
-	tc := setupDB(t)
-	advisoryLockID := newAdvisoryLockID()
-	tc.Config.AdvisoryLockID = advisoryLockID
+	tc := setupConfig(t)
 	store, cleanup := cltest.NewStoreWithConfig(tc)
 	defer cleanup()
-
-	if store.Config.DatabaseURL() == "" {
-		panic("No postgres DatabaseURL set.")
-	}
 
 	connErr, dbErr := store.ORM.LockingStrategyHelperSimulateDisconnect()
 	require.NoError(t, connErr)
 	require.NoError(t, dbErr)
 
 	orm2ShutdownSignal := gracefulpanic.NewSignal()
-	orm2, err := orm.NewORM(store.Config.DatabaseURL(), store.Config.DatabaseTimeout(), orm2ShutdownSignal, orm.DialectPostgres)
+	orm2, err := orm.NewORM(store.Config.DatabaseURL(), store.Config.DatabaseTimeout(), orm2ShutdownSignal, orm.DialectPostgres, tc.Config.AdvisoryLockID)
 	require.NoError(t, err)
 	defer orm2.Close()
 
@@ -135,12 +120,9 @@ func TestPostgresLockingStrategy_CanBeReacquiredByNewNodeAfterDisconnect(t *test
 }
 
 func TestPostgresLockingStrategy_WhenReacquiredOriginalNodeErrors(t *testing.T) {
-	store, cleanup := cltest.NewStore(t)
+	tc := setupConfig(t)
+	store, cleanup := cltest.NewStoreWithConfig(tc)
 	defer cleanup()
-
-	if store.Config.DatabaseURL() == "" {
-		t.Skip("No postgres DatabaseURL set.")
-	}
 
 	delay := store.Config.DatabaseTimeout()
 
@@ -148,7 +130,7 @@ func TestPostgresLockingStrategy_WhenReacquiredOriginalNodeErrors(t *testing.T) 
 	require.NoError(t, connErr)
 	require.NoError(t, dbErr)
 
-	lock, err := orm.NewLockingStrategy("postgres", store.Config.DatabaseURL())
+	lock, err := orm.NewLockingStrategy("postgres", store.Config.DatabaseURL(), tc.Config.AdvisoryLockID)
 	require.NoError(t, err)
 	defer lock.Unlock(delay)
 
