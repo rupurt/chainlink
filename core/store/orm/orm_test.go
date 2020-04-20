@@ -26,10 +26,6 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-func TestMain(m *testing.M) {
-	cltest.SetUpDBAndRunTests(m)
-}
-
 func TestORM_WhereNotFound(t *testing.T) {
 	t.Parallel()
 	store, cleanup := cltest.NewStore(t)
