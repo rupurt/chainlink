@@ -79,15 +79,9 @@ func init() {
 	gomega.SetDefaultEventuallyTimeout(3 * time.Second)
 	lvl := logLevelFromEnv()
 	logger.SetLogger(CreateTestLogger(lvl))
-}
-
-func SetUpDBAndRunTests(m *testing.M) {
-	err := GlobalPrepareTestDB()
-	if err != nil {
-		panic(err)
-	}
-	code := m.Run()
-	os.Exit(code)
+	// Register txdb as dialect wrapping postgres
+	// See: DialectTransactionWrappedPostgres
+	txdb.Register("cloudsqlpostgres", "postgres", config.DatabaseURL())
 }
 
 func logLevelFromEnv() zapcore.Level {
