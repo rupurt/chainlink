@@ -75,7 +75,7 @@ type ChainlinkApplication struct {
 // be used by the node.
 func NewApplication(config *orm.Config, onConnectCallbacks ...func(Application)) Application {
 	shutdownSignal := gracefulpanic.NewSignal()
-	store := store.NewStore(config, shutdownSignal, store.AutoMigrate)
+	store := store.NewStore(config, shutdownSignal)
 	config.SetRuntimeStore(store.ORM)
 
 	statsPusher := synchronization.NewStatsPusher(

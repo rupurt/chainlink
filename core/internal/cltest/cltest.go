@@ -123,6 +123,7 @@ func NewTestConfig(t testing.TB) *TestConfig {
 	rawConfig.Set("ETH_CHAIN_ID", 3)
 	rawConfig.Set("CHAINLINK_DEV", true)
 	rawConfig.Set("ETH_GAS_BUMP_THRESHOLD", 3)
+	rawConfig.Set("MIGRATE_DATABASE", false)
 	rawConfig.Set("MINIMUM_SERVICE_DURATION", "24h")
 	rawConfig.Set("MIN_INCOMING_CONFIRMATIONS", 1)
 	rawConfig.Set("MIN_OUTGOING_CONFIRMATIONS", 6)

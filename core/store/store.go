@@ -248,16 +248,14 @@ func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal, opti
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#NewORM")
 	}
-	for _, opt := range options {
-		if opt == AutoMigrate {
-			orm.SetLogging(config.LogSQLStatements() || config.LogSQLMigrations())
+	if config.MigrateDatabase() {
+		orm.SetLogging(config.LogSQLStatements() || config.LogSQLMigrations())
 
-			err = orm.RawDB(func(db *gorm.DB) error {
-				return migrations.Migrate(db)
-			})
-			if err != nil {
-				return nil, errors.Wrap(err, "initializeORM#Migrate")
-			}
+		err = orm.RawDB(func(db *gorm.DB) error {
+			return migrations.Migrate(db)
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "initializeORM#Migrate")
 		}
 	}
 	orm.SetLogging(config.LogSQLStatements())
