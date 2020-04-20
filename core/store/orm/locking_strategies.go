@@ -15,18 +15,10 @@ const productionPostgresAdvisoryLockID int64 = 1027321974924625846
 
 // NewLockingStrategy returns the locking strategy for a particular dialect
 // to ensure exlusive access to the orm.
-func NewLockingStrategy(dialect DialectName, dbpath string, opts ...interface{}) (LockingStrategy, error) {
+func NewLockingStrategy(dialect DialectName, dbpath string, advisoryLockID int64) (LockingStrategy, error) {
 	switch dialect {
-	case DialectPostgres:
-		advisoryLockID := productionPostgresAdvisoryLockID
-		for _, opt := range opts {
-			advisoryLockID = opt.(int64)
-		}
+	case DialectPostgres, DialectTransactionWrappedPostgres:
 		return NewPostgresLockingStrategy(dbpath, advisoryLockID)
-	case DialectTransactionWrappedPostgres:
-		// This is used in test code. Since each db connection is isolated in
-		// it's own transaction, there is no need for any locking
-		return &DummyLockingStrategy{}, nil
 	}
 
 	return nil, fmt.Errorf("unable to create locking strategy for dialect %s and path %s", dialect, dbpath)
@@ -126,13 +118,4 @@ func (s *PostgresLockingStrategy) Unlock(timeout time.Duration) error {
 		connErr,
 		dbErr,
 	)
-}
-
-type DummyLockingStrategy struct{}
-
-func (d *DummyLockingStrategy) Lock(timeout time.Duration) error {
-	return nil
-}
-func (d *DummyLockingStrategy) Unlock(timeout time.Duration) error {
-	return nil
 }

@@ -1,7 +1,6 @@
 package orm_test
 
 import (
-	"math/rand"
 	"reflect"
 	"testing"
 	"time"
@@ -17,10 +16,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-func newAdvisoryLockID() int64 {
-	return rand.Int63()
-}
 
 func TestNewLockingStrategy(t *testing.T) {
 	tests := []struct {
@@ -43,13 +38,8 @@ func TestNewLockingStrategy(t *testing.T) {
 }
 
 func setupConfig(t *testing.T) *cltest.TestConfig {
-	tc := cltest.NewTestConfig(t, orm.DialectPostgres)
-	if tc.Config.DatabaseURL() == "" {
-		t.Skip("No postgres DatabaseURL set.")
-	}
-	tc.Config.AdvisoryLockID = newAdvisoryLockID()
+	tc := cltest.NewTestConfig(t)
 	return tc
-
 }
 
 func TestPostgresLockingStrategy_Lock(t *testing.T) {

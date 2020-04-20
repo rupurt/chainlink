@@ -343,7 +343,7 @@ func dropAndCreateTestDB(config *orm.Config) error {
 }
 
 func migrateTestDB(config *orm.Config) error {
-	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), gracefulpanic.NewSignal(), config.Dialect)
+	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), gracefulpanic.NewSignal(), config.Dialect, config.AdvisoryLockID)
 	if err != nil {
 		return fmt.Errorf("failed to initialize orm: %v", err)
 	}

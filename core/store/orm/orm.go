@@ -75,7 +75,9 @@ var (
 )
 
 // NewORM initializes a new database file at the configured uri.
-func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal, dialect DialectName, options ...interface{}) (*ORM, error) {
+func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Signal, dialect DialectName, advisoryLockID int64) (*ORM, error) {
+	lockingStrategy, err := NewLockingStrategy(dialect, uri, advisoryLockID)
+
 	if dialect == "" {
 		// Postgres is the default
 		dialect = DialectPostgres
@@ -91,7 +93,6 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	}
 
 	fmt.Println("balls dialect", dialect)
-	lockingStrategy, err := NewLockingStrategy(dialect, uri, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create ORM lock")
 	}

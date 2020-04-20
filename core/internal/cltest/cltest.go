@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -107,6 +108,10 @@ func NewConfig(t testing.TB, options ...interface{}) (*TestConfig, func()) {
 	return NewConfigWithWSServer(t, wsserver, options...), cleanup
 }
 
+func newAdvisoryLockID() int64 {
+	return rand.Int63()
+}
+
 // NewTestConfig returns a test configuration
 func NewTestConfig(t testing.TB, options ...interface{}) *TestConfig {
 	t.Helper()
@@ -123,6 +128,8 @@ func NewTestConfig(t testing.TB, options ...interface{}) *TestConfig {
 		}
 	}
 
+	// Required to stop tests stepping on each other
+	rawConfig.AdvisoryLockID = newAdvisoryLockID()
 	rawConfig.Set("BRIDGE_RESPONSE_URL", "http://localhost:6688")
 	rawConfig.Set("ETH_CHAIN_ID", 3)
 	rawConfig.Set("CHAINLINK_DEV", true)

@@ -1,10 +1,8 @@
 package migrations_test
 
 import (
-	"database/sql"
 	"fmt"
 	"math/big"
-	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -35,7 +33,7 @@ func bootstrapORM(t *testing.T) (*orm.ORM, func()) {
 	require.NoError(t, os.MkdirAll(config.RootDir(), 0700))
 	migrationTestDBURL, err := cltest.DropAndCreateThrowawayTestDB(tc.DatabaseURL(), "migrations")
 	require.NoError(t, err)
-	orm, err := orm.NewORM(migrationTestDBURL, config.DatabaseTimeout(), gracefulpanic.NewSignal())
+	orm, err := orm.NewORM(migrationTestDBURL, config.DatabaseTimeout(), gracefulpanic.NewSignal(), orm.DialectPostgres)
 	require.NoError(t, err)
 	orm.SetLogging(true)
 
