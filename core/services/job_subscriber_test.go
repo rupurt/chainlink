@@ -132,7 +132,7 @@ func TestJobSubscriber_RemoveJob_NotFoundError(t *testing.T) {
 }
 
 func TestJobSubscriber_Connect_Disconnect(t *testing.T) {
-	// NOTE: This test fails sporadically when run in parallel
+	// FIXME: This test fails sporadically when run in parallel
 	// I do not know why
 	t.Parallel()
 

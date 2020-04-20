@@ -132,23 +132,23 @@ func (ed *EthDialer) Dial(urlString string) (eth.CallerSubscriber, error) {
 }
 
 // NewStore will create a new store using the Eth dialer
-func NewStore(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
-	return NewStoreWithDialer(config, NewEthDialer(config.MaxRPCCallsPerSecond()), shutdownSignal, options...)
+func NewStore(config *orm.Config, shutdownSignal gracefulpanic.Signal) *Store {
+	return NewStoreWithDialer(config, NewEthDialer(config.MaxRPCCallsPerSecond()), shutdownSignal)
 }
 
 // NewStoreWithDialer creates a new store with the given config and dialer
-func NewStoreWithDialer(config *orm.Config, dialer Dialer, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
+func NewStoreWithDialer(config *orm.Config, dialer Dialer, shutdownSignal gracefulpanic.Signal) *Store {
 	keyStore := func() *KeyStore { return NewKeyStore(config.KeysDir()) }
-	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal, options...)
+	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal)
 }
 
 // NewInsecureStore creates a new store with the given config and
 // dialer, using an insecure keystore.
 // NOTE: Should only be used for testing!
-func NewInsecureStore(config *orm.Config, shutdownSignal gracefulpanic.Signal, options ...interface{}) *Store {
+func NewInsecureStore(config *orm.Config, shutdownSignal gracefulpanic.Signal) *Store {
 	dialer := NewEthDialer(config.MaxRPCCallsPerSecond())
 	keyStore := func() *KeyStore { return NewInsecureKeyStore(config.KeysDir()) }
-	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal, options...)
+	return newStoreWithDialerAndKeyStore(config, dialer, keyStore, shutdownSignal)
 }
 
 func newStoreWithDialerAndKeyStore(
@@ -156,7 +156,6 @@ func newStoreWithDialerAndKeyStore(
 	dialer Dialer,
 	keyStoreGenerator func() *KeyStore,
 	shutdownSignal gracefulpanic.Signal,
-	options ...interface{},
 ) *Store {
 
 	err := os.MkdirAll(config.RootDir(), os.FileMode(0700))
@@ -244,7 +243,7 @@ func (s *Store) SyncDiskKeyStoreToDB() error {
 }
 
 func initializeORM(config *orm.Config, shutdownSignal gracefulpanic.Signal) (*orm.ORM, error) {
-	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal, config.Dialect)
+	orm, err := orm.NewORM(config.DatabaseURL(), config.DatabaseTimeout(), shutdownSignal, config.Dialect, config.AdvisoryLockID)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializeORM#NewORM")
 	}

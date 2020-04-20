@@ -64,11 +64,6 @@ const (
 	APISessionID = "session"
 	// SessionSecret is the hardcoded secret solely used for test
 	SessionSecret = "clsession_test_secret"
-	// DisableTransactionWrapping is a flag that turns off transactional tests by using
-	// DialectPostgres instead of the default
-	// DialectTransactionWrappedPostgres.
-	// DO NOT USE THIS unless you know exactly why you need it
-	DisableTransactionWrapping = "disable_transaction_wrapping"
 )
 
 var storeCounter uint64
@@ -122,8 +117,9 @@ func NewTestConfig(t testing.TB, options ...interface{}) *TestConfig {
 
 	rawConfig.Dialect = orm.DialectTransactionWrappedPostgres
 	for _, opt := range options {
-		if opt == DisableTransactionWrapping {
-			rawConfig.Dialect = orm.DialectPostgres
+		switch v := opt.(type) {
+		case orm.DialectName:
+			rawConfig.Dialect = v
 		}
 	}
 

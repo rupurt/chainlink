@@ -41,6 +41,7 @@ type Config struct {
 	viper           *viper.Viper
 	SecretGenerator SecretGenerator
 	Dialect         DialectName
+	AdvisoryLockID  int64
 	runtimeStore    *ORM
 }
 
