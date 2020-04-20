@@ -31,6 +31,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/utils"
 	"github.com/smartcontractkit/chainlink/core/web"
 
+	"github.com/DATA-DOG/go-txdb"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
@@ -81,6 +82,10 @@ func init() {
 	logger.SetLogger(CreateTestLogger(lvl))
 	// Register txdb as dialect wrapping postgres
 	// See: DialectTransactionWrappedPostgres
+	config := orm.NewConfig()
+	if config.DatabaseURL() == "" {
+		panic("You must set DATABASE_URL env var to point to your test database. HINT: Try DATABASE_URL=postgresql://postgres@localhost:5432/chainlink_test?sslmode=disable")
+	}
 	txdb.Register("cloudsqlpostgres", "postgres", config.DatabaseURL())
 }
 
