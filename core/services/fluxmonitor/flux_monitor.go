@@ -350,13 +350,17 @@ func NewPollingDeviationChecker(
 	fetcher Fetcher,
 	pollDelay time.Duration,
 ) (*PollingDeviationChecker, error) {
+	threshold := float64(initr.InitiatorParams.Threshold)
+	if threshold == 0 {
+		return nil, errors.WithStack(fmt.Errorf("threshold of 0 is not allowed"))
+	}
 	return &PollingDeviationChecker{
 		store:              store,
 		fluxAggregator:     fluxAggregator,
 		initr:              initr,
 		requestData:        initr.InitiatorParams.RequestData,
 		idleThreshold:      initr.InitiatorParams.IdleThreshold.Duration(),
-		threshold:          float64(initr.InitiatorParams.Threshold),
+		threshold:          threshold,
 		precision:          initr.InitiatorParams.Precision,
 		runManager:         runManager,
 		fetcher:            fetcher,
@@ -833,6 +837,11 @@ func (p *PollingDeviationChecker) loggerFieldsForAnswerUpdated(log *contracts.Lo
 
 // OutsideDeviation checks whether the next price is outside the threshold.
 func OutsideDeviation(curAnswer, nextAnswer decimal.Decimal, threshold float64) bool {
+	if threshold == 0 {
+		// This is prevented by the fluxmonitor initiator's validation logic, and by
+		// NewPollingDeviationChecker
+		panic("deviation threshold of 0 is not allowed")
+	}
 	loggerFields := []interface{}{
 		"threshold", threshold,
 		"currentAnswer", curAnswer,
