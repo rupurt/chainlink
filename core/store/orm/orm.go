@@ -116,7 +116,6 @@ func NewORM(uri string, timeout time.Duration, shutdownSignal gracefulpanic.Sign
 	// TODO: It may be advisable to set this mode in production as well?
 	if dialect == DialectTransactionWrappedPostgres {
 		// Required to prevent phantom reads in overlapping tests
-		fmt.Println("BALLS BALLS")
 		err := db.Exec(`SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE`).Error
 		if err != nil {
 			panic(err)
